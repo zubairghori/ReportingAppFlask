@@ -65,13 +65,13 @@ class User(db.Model):
         self.name  = name
         self.email  = email
         self.Role  = Role
-        self.password  = password
+        self.password  = self.encrypt(password)
 
 
     def __init__(self,data):
         self.name = data['name']
         self.email = data['email']
-        self.password = data['password']
+        self.password = self.encrypt(data['password'])
         self.Role = data['Role']
 
     def __repr__(self):
@@ -167,16 +167,20 @@ def signup():
 @app.route('/login', methods = ['POST'])
 def login():
     try:
-        email = request.form['email']
-        password = request.form['password']
+        email = request.json['email']
+        password = request.json['password']
     except:
-        return jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Parameters'})
+        return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Parameters'}), 404)
     else:
-        user = User.query.filter_by(email=email, password=password).all()
+        user = User.query.filter_by(email=email).all()
         if len(user) != 0:
             user = user[0]
-            return jsonify({'data': user, 'message': 'Sucessfully Registered', 'error': ''})
-        return jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid email/Password'})
+            if user.decrypt(enteredPassword=password) == True:
+                token = user.generateToken()
+                return jsonify({'data': {'user': user, 'token': token},'message': 'Sucessfully Login', 'error': ''})
+            else:
+                return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Password'}), 401)
+        return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid email'}), 401)
 
 
 @app.route('/submitReport', methods = ['POST'])
