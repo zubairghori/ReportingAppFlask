@@ -185,27 +185,36 @@ def login():
 
 @app.route('/submitReport', methods = ['POST'])
 def submitReport():
+    try:
+        token = request.headers['token']
+    except:
+        return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid token'}), 404)
+    else:
         try:
-            id = request.form['id']
-            city = request.form['city']
-            image = request.form['image']
-            no = request.form['no']
-            description = request.form['description']
-            rType = request.form['rType']
-
+            id = User.verifyToken(token=token)
         except:
-            return jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Parameter'})
+            return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid token'}), 404)
         else:
-            user = User.query.filter_by(id=id).all()
-            if len(user) == 0:
-                return jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid User ID'})
+            try:
+                city = request.json['city']
+                image = request.json['image']
+                no = request.json['no']
+                description = request.json['description']
+                rType = request.json['rType']
+
+            except:
+                return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Parameter'}),400)
             else:
-                user = user[0]
-                report = Report(request.form)
-                report.user = user.id
-                db.session.add(report)
-                db.session.commit()
-                return jsonify({'data': report, 'message': 'Your report has been submitted sucessfully', 'error': ''})
+                user = User.query.filter_by(id=id).all()
+                if len(user) == 0:
+                    return make_response( jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid User ID'}),400)
+                else:
+                    user = user[0]
+                    report = Report(request.json)
+                    report.user = user.id
+                    db.session.add(report)
+                    db.session.commit()
+                    return jsonify({'data': report, 'message': 'Your report has been submitted sucessfully', 'error': ''})
 
 
 @app.route('/getAllReportsForUsers/<int:id>/', methods = ['GET'])
