@@ -182,7 +182,6 @@ def login():
                 return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Password'}), 401)
         return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid email'}), 401)
 
-
 @app.route('/submitReport', methods = ['POST'])
 def submitReport():
     try:
@@ -217,19 +216,24 @@ def submitReport():
                     return jsonify({'data': report, 'message': 'Your report has been submitted sucessfully', 'error': ''})
 
 
-@app.route('/getAllReportsForUsers/<int:id>/', methods = ['GET'])
-def getAllReportsForUsers(id):
+@app.route('/getAllReportsForUsers', methods = ['GET'])
+def getAllReportsForUsers():
     try:
-        id = id
+        token = request.headers['token']
     except:
-        return jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Parameter'})
+        return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid token'}), 404)
     else:
-        user = User.query.filter_by(id=id).all()
-        if len(user) == 0:
-            return jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid User ID'})
+        try:
+            id = User.verifyToken(token=token)
+        except:
+            return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid token'}), 404)
         else:
-            allReports = Report.query.all()
-            return jsonify({'data': allReports, 'message': 'Sucessfull', 'error': ''})
+            user = User.query.filter_by(id=id).all()
+            if len(user) == 0:
+                return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid User ID'}),404)
+            else:
+                allReports = Report.query.filter_by(user=id).all()
+                return jsonify({'data': allReports, 'message': 'Sucessfull', 'error': ''})
 
 
 @app.route('/getAllReportsForUsers', methods = ['POST'])
