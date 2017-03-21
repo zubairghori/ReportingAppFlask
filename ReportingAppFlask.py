@@ -321,27 +321,35 @@ def SubmitStatus():
 @app.route('/getStatus', methods = ['POST'])
 def getStatus():
     try:
-        uID = request.form['uid']
-        rID = request.form['rid']
+        token = request.headers['token']
     except:
-        return jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Parameter'})
+        return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid token'}), 404)
     else:
-        user = User.query.filter_by(id=uID).all()
-        if len(user) != 0:
-            user = user[0]
-            report = Report.query.filter_by(id=rID, user=user.id).all()
-            if len(report) != 0:
-                report = report[0]
-                reportStatus = ReportStatus.query.filter_by(admin=user.id, report=report.id).all()
-                if len(reportStatus) != 0:
-                    return jsonify(
-                        {'data': '', 'message': "Report status is = '" + reportStatus[0].status + "'", 'error': ''})
-                else:
-                    return jsonify({'data': '', 'message': "Your report has not any status yet", 'error': ''})
-            else:
-                return jsonify({'data': '', 'message': '', 'error': 'Invalid reportID'})
+        try:
+            id = User.verifyToken(token=token)
+        except:
+            return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid token'}), 404)
         else:
-            return jsonify({'data': '', 'message': '', 'error': 'Invalid userID'})
+            try:
+                rID = request.json['rid']
+            except:
+                return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Parameter'}),404)
+            else:
+                user = User.query.filter_by(id=id).all()
+                if len(user) != 0:
+                    user = user[0]
+                    report = Report.query.filter_by(id=rID, user=user.id).all()
+                    if len(report) != 0:
+                        report = report[0]
+                        reportStatus = ReportStatus.query.filter_by(admin=user.id, report=report.id).all()
+                        if len(reportStatus) != 0:
+                            return jsonify({'data': '', 'message': "Report status is = '" + reportStatus[0].status + "'", 'error': ''})
+                        else:
+                            return make_response(jsonify({'data': '', 'message': "Your report has not any status yet", 'error': ''}),404)
+                    else:
+                        return make_response(jsonify({'data': '', 'message': '', 'error': 'Invalid reportID'}),404)
+                else:
+                    return make_response(jsonify({'data': '', 'message': '', 'error': 'Invalid userID'}),404)
 
 @app.route('/getCrimeAndMissing', methods = ['GET'])
 def getCrimeAndMissing():
