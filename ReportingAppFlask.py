@@ -270,41 +270,53 @@ def getAllReportsWithCity():
 
 @app.route('/SubmitStatus', methods = ['POST'])
 def SubmitStatus():
+    try:
+        token = request.headers['token']
+    except:
+        return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid token'}), 404)
+    else:
         try:
-            uID = request.form['uid']
-            rID = request.form['rid']
-            aID = request.form['aid']
-            status = request.form['status']
-
+            id = User.verifyToken(token=token)
         except:
-            return jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Parameter'})
+            return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid token'}), 404)
         else:
-            admin = User.query.filter_by(id=aID).all()
-            user = User.query.filter_by(id=uID).all()
-            report = Report.query.filter_by(id=rID).all()
+            try:
+                uID = request.json['uid']
+                rID = request.json['rid']
+                status = request.json['status']
 
-            if len(admin) != 0  and report != 0 and user != 0:
-                admin = admin[0]
-                user=user[0]
-                report = report[0]
-                if admin.Role == False:
-                    reportStatus = ReportStatus.query.filter_by(admin=user.id,report=report.id).all()
-                    if reportStatus:
-                        firstReport = reportStatus[0]
-                        firstReport.status = status
-                        db.session.add(firstReport)
-                        db.session.commit()
-                        return jsonify({'data': '', 'message': 'Your status has been Updated', 'error': ''})
-                    else:
-                        reportStatus = ReportStatus(uID=uID,rID=rID,status=status)
-                        db.session.add(reportStatus)
-                        db.session.commit()
-                        return jsonify({'data': '', 'message': 'Your status has been submitted', 'error': ''})
-                else:
-                    return jsonify({'data': '', 'message': '', 'error': 'You have not access to submit status'})
-
+            except:
+                return make_response(jsonify({'data': '', 'message': 'Failed', 'error': 'Invalid Parameter'}),404)
             else:
-                return jsonify({'data': '', 'message': '', 'error': 'Invalid userID/reportID/adminID'})
+                admin = User.query.filter_by(id=id).all()
+                user = User.query.filter_by(id=uID).all()
+                report = Report.query.filter_by(id=rID).all()
+
+                if len(admin) != 0  and len(report) != 0 and len(user) != 0:
+                    admin = admin[0]
+                    user=user[0]
+                    report = report[0]
+                    if report.user == uID:
+                        if admin.Role == False:
+                            reportStatus = ReportStatus.query.filter_by(admin=user.id,report=report.id).all()
+                            if reportStatus:
+                                firstReport = reportStatus[0]
+                                firstReport.status = status
+                                db.session.add(firstReport)
+                                db.session.commit()
+                                return jsonify({'data': '', 'message': 'Your status has been Updated', 'error': ''})
+                            else:
+                                reportStatus = ReportStatus(uID=uID,rID=rID,status=status)
+                                db.session.add(reportStatus)
+                                db.session.commit()
+                                return jsonify({'data': '', 'message': 'Your status has been submitted', 'error': ''})
+                        else:
+                            return make_response(jsonify({'data': '', 'message': '', 'error': 'You have not access to submit status'}),401)
+                    else:
+                        return make_response(jsonify({'data': '', 'message': '', 'error': 'You have not any report with this user id'}), 401)
+
+                else:
+                    return make_response(jsonify({'data': '', 'message': '', 'error': 'Invalid userID/reportID/adminID'}),404)
 
 @app.route('/getStatus', methods = ['POST'])
 def getStatus():
