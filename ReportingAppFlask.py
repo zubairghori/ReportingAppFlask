@@ -338,16 +338,19 @@ def getStatus():
                 user = User.query.filter_by(id=id).all()
                 if len(user) != 0:
                     user = user[0]
-                    report = Report.query.filter_by(id=rID, user=user.id).all()
-                    if len(report) != 0:
-                        report = report[0]
-                        reportStatus = ReportStatus.query.filter_by(admin=user.id, report=report.id).all()
-                        if len(reportStatus) != 0:
-                            return jsonify({'data': '', 'message': "Report status is = '" + reportStatus[0].status + "'", 'error': ''})
-                        else:
-                            return make_response(jsonify({'data': '', 'message': "Your report has not any status yet", 'error': ''}),404)
+                    if user.Role == True:
+                        report = Report.query.filter_by(id=rID, user=user.id).all()
                     else:
-                        return make_response(jsonify({'data': '', 'message': '', 'error': 'Invalid reportID'}),404)
+                        report = Report.query.filter_by(id=rID).all()
+                        if len(report) != 0:
+                            report = report[0]
+                            reportStatus = ReportStatus.query.filter_by(admin=user.id, report=report.id).all()
+                            if len(reportStatus) != 0:
+                                return jsonify({'data': '', 'message': "Report status is = '" + reportStatus[0].status + "'", 'error': ''})
+                            else:
+                                return make_response(jsonify({'data': '', 'message': "Your report has not any status yet", 'error': ''}),404)
+                        else:
+                            return make_response(jsonify({'data': '', 'message': '', 'error': 'Invalid reportID'}),404)
                 else:
                     return make_response(jsonify({'data': '', 'message': '', 'error': 'Invalid userID'}),404)
 
